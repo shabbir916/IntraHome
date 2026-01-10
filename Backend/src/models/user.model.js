@@ -1,4 +1,3 @@
-const { default: mongoose } = require("mongoose");
 const moongose = require("mongoose");
 
 const userSchema = new moongose.Schema(
@@ -14,23 +13,25 @@ const userSchema = new moongose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     password: {
       type: String,
       select: false,
     },
     role: {
-      trype: String,
-      enum: ["USER", "ADMIN"],
-    },
-    otp: {
       type: String,
+      enum: ["USER", "ADMIN"],
+      default: "USER",
     },
-    isOtpVerified: {
+    isEmailVerified: {
       type: Boolean,
       default: false,
     },
-    otpExpiry: {
+    emailOtpHash: {
+      type: String,
+    },
+    emailOtpExpiry: {
       type: Date,
     },
     resetPasswordToken: {
@@ -52,11 +53,11 @@ const userSchema = new moongose.Schema(
       type: Boolean,
       default: false,
     },
-    isLoginAt: {
+    lastLoginAt: {
       type: Date,
     },
   },
   { timestamps: true }
 );
 
-const userModel = mongoose.model("user",userSchema);
+const userModel = mongoose.model("user", userSchema);
