@@ -77,7 +77,7 @@ const updateProfileValidator = [
     .isLength({ min: 3, max: 50 })
     .withMessage("FullName must be 3-50 characters"),
 
-  body("avatar").optional.isURL().withMessage("Avatar must be a valid URL"),
+  body("avatar").optional().isURL().withMessage("Avatar must be a valid URL"),
 
   validate,
 ];

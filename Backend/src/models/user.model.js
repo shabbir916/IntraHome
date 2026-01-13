@@ -28,10 +28,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    emailOtpHash: {
+    otp: {
       type: String,
     },
-    emailOtpExpiry: {
+    otpExpiry: {
       type: Date,
     },
     resetPasswordToken: {
@@ -60,6 +60,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const userModel = mongoose.model("user", userSchema);
+const userModel = mongoose.model("users", userSchema);
 
 module.exports = userModel;
