@@ -125,24 +125,47 @@ async function logoutUser(req, res) {
 }
 
 async function forgetPassword(req, res) {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email });
 
-  if (!user) {
-    return res.status(400).json({
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        mesaage: "No user found with this email",
+      });
+    }
+
+    const otp = generateOTP();
+    const hashedOTP = await bcrypt.hash(otp, 10);
+
+    user.otp = hashedOTP;
+    user.otpExpiry = Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000;
+
+    await user.save();
+
+    await sendEmail({
+      to: user.email,
+      subject: "IntraHome — Password Reset OTP",
+      html: resetPasswordEmail({
+        name: user.fullName,
+        otp,
+        expiresIn: OTP_EXPIRY_MINUTES,
+      }),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent Successfully on your email",
+    });
+  } catch (error) {
+    console.error("Forget Password Error", error);
+    return res.status(500).json({
       success: false,
-      mesaage: "No user found with this email",
+      message: "Server error while sendiong OTP",
     });
   }
-
-  const otp = generateOTP();
-  const hashedOTP = await bcrypt.hash(otp, 10);
-
-  user.otp = hashedOTP;
-  user.otpExpiry = Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000;
-
-  await user.save();
 }
 
 module.exports = { registerUser, loginUser, logoutUser, forgetPassword };
