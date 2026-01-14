@@ -2,7 +2,7 @@ const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { generateHashedOTP } = require("../utils/generateOTP");
-const crypto = require("crypto"); 
+const crypto = require("crypto");
 const sendEmail = require("../utils/sedEmail");
 const { welcomeEmail, resetPasswordEmail } = require("../emails/index");
 const { generateResetPasswordToken } = require("../utils/resetToken");
@@ -176,6 +176,7 @@ async function verifyOTP(req, res) {
     const { email, otp } = req.body;
 
     const user = await userModel.findOne({ email });
+
     if (!user || !user.otp || !user.otpExpiry) {
       return res.status(400).json({
         success: false,
@@ -191,20 +192,19 @@ async function verifyOTP(req, res) {
     }
 
     const isOTPValid = await bcrypt.compare(otp, user.otp);
+
     if (!isOTPValid) {
       return res.status(400).json({
         success: false,
-        message: "Incorrect OTP",
+        message: "Invalid OTP",
       });
     }
 
-    // OTP verified → generate reset token
-    const { token, hashedToken, expiry } = generateResetPasswordToken(10); // 10 min validity
+    const { token, hashedToken, expiry } = generateResetPasswordToken(10);
 
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpiry = expiry;
 
-    // OTP invalidate
     user.otp = undefined;
     user.otpExpiry = undefined;
 
@@ -213,7 +213,7 @@ async function verifyOTP(req, res) {
     return res.status(200).json({
       success: true,
       message: "OTP verified successfully",
-      resetToken: token, // frontend ke liye
+      resetToken: token,
     });
   } catch (error) {
     console.error("Verify OTP Error", error);
@@ -246,7 +246,6 @@ async function resetPassword(req, res) {
 
     user.password = hashedPassword;
 
-    // reset token invalidate
     user.resetPasswordToken = undefined;
     user.resetPasswordExpiry = undefined;
 

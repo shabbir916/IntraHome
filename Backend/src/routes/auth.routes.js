@@ -16,15 +16,17 @@ const {
   resetPasswordValidator,
 } = require("../middleware/userValidator.middleware");
 
+const authUser = require("../middleware/auth.middleware");
 const authLimiter = require("../middleware/rateLimiter");
 const router = express.Router();
 
 router.post("/register", authLimiter, registerValidator, registerUser);
 router.post("/login", authLimiter, loginValidator, loginUser);
-router.post("/logout", logoutUser);
+router.post("/logout", authUser, logoutUser);
 router.post(
   "/forgetPassword",
-  authLimiter,forgetPasswordValidator,
+  authLimiter,
+  forgetPasswordValidator,
   forgetPassword
 );
 router.post("/verifyOTP", authLimiter, verifyEmailOtpValidator, verifyOTP);
