@@ -56,7 +56,7 @@ const verifyEmailOtpValidator = [
   validate,
 ];
 
-const resetPassword = [
+const resetPasswordValidator = [
   body("newPassword")
     .isLength({ min: 6 })
     .withMessage("Password must be atleast 6 characters"),
@@ -87,6 +87,6 @@ module.exports = {
   loginValidator,
   forgetPasswordValidator,
   verifyEmailOtpValidator,
-  resetPassword,
+  resetPasswordValidator,
   updateProfileValidator,
 };

@@ -1,9 +1,11 @@
 const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const generateOTP = require("../utils/generateOTP");
+const { generateHashedOTP } = require("../utils/generateOTP");
+const crypto = require("crypto"); 
 const sendEmail = require("../utils/sedEmail");
 const { welcomeEmail, resetPasswordEmail } = require("../emails/index");
+const { generateResetPasswordToken } = require("../utils/resetToken");
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 const OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES || 5;
@@ -137,11 +139,12 @@ async function forgetPassword(req, res) {
       });
     }
 
-    const otp = generateOTP();
-    const hashedOTP = await bcrypt.hash(otp, 10);
+    const { otp, hashedOTP, otpExpiry } = await generateHashedOTP(
+      OTP_EXPIRY_MINUTES
+    );
 
     user.otp = hashedOTP;
-    user.otpExpiry = Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000;
+    user.otpExpiry = otpExpiry;
 
     await user.save();
 
@@ -168,4 +171,105 @@ async function forgetPassword(req, res) {
   }
 }
 
-module.exports = { registerUser, loginUser, logoutUser, forgetPassword };
+async function verifyOTP(req, res) {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await userModel.findOne({ email });
+    if (!user || !user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    if (user.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    const isOTPValid = await bcrypt.compare(otp, user.otp);
+    if (!isOTPValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Incorrect OTP",
+      });
+    }
+
+    // OTP verified → generate reset token
+    const { token, hashedToken, expiry } = generateResetPasswordToken(10); // 10 min validity
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpiry = expiry;
+
+    // OTP invalidate
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      resetToken: token, // frontend ke liye
+    });
+  } catch (error) {
+    console.error("Verify OTP Error", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while verifying OTP",
+    });
+  }
+}
+
+async function resetPassword(req, res) {
+  try {
+    const { token, newPassword } = req.body;
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await userModel.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    // reset token invalidate
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error("Reset Password Error", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while resetting password",
+    });
+  }
+}
+
+module.exports = {
+  registerUser,
+  loginUser,
+  logoutUser,
+  forgetPassword,
+  verifyOTP,
+  resetPassword,
+};
