@@ -14,7 +14,7 @@ const {
   forgetPasswordValidator,
   verifyEmailOtpValidator,
   resetPasswordValidator,
-} = require("../middleware/userValidator.middleware");
+} = require("../middleware/authValidator.middleware");
 
 const authUser = require("../middleware/auth.middleware");
 const authLimiter = require("../middleware/rateLimiter");
