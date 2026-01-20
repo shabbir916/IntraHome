@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #0f49bd;
+
+  --background-light: #f6f6f8;
+  --background-dark: #101622;
+
+  --surface-dark: #161e2d;
+  --input-dark: #192233;
+  --border-dark: #324467;
+}
+
+
+.dark {
+  --background-light: #101622;
+}
+
+@theme {
+  --color-primary: var(--primary);
+
+  --color-background-light: var(--background-light);
+  --color-background-dark: var(--background-dark);
+
+  --color-surface-dark: var(--surface-dark);
+  --color-input-dark: var(--input-dark);
+  --color-border-dark: var(--border-dark);
+}
+
+
